@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and stats",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "username": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "email": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "stats": {
+          "type": "object",
+          "properties": {
+            "highestWpm": { "type": "number" },
+            "averageWpm": { "type": "number" },
+            "averageAccuracy": { "type": "number" },
+            "totalTests": { "type": "number" },
+            "totalXP": { "type": "number" },
+            "level": { "type": "number" },
+            "coins": { "type": "number" }
+          }
+        },
+        "badges": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["uid", "email"]
+    },
+    "TypingAttempt": {
+      "title": "Typing Attempt",
+      "description": "A single typing test attempt result",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "wpm": { "type": "number" },
+        "accuracy": { "type": "number" },
+        "duration": { "type": "number" },
+        "mode": { "type": "string", "enum": ["practice", "contest"] },
+        "contestId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "wpm", "accuracy", "createdAt"]
+    },
+    "Contest": {
+      "title": "Contest",
+      "description": "Typing contest details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "duration": { "type": "number", "description": "Duration in seconds" },
+        "text": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "isPublic": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["scheduled", "active", "finished"] }
+      },
+      "required": ["title", "startTime", "duration", "text"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "typingAttempts": {
+      "schema": "TypingAttempt",
+      "description": "Global typing test results"
+    },
+    "contests": {
+      "schema": "Contest",
+      "description": "Available contests"
+    }
+  }
+}

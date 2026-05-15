@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- USERS ---
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      // Users can only update their own profile
+      allow update: if isOwner(userId) && isValidUser(incoming()) && (
+        // Allow updating core profile fields and stats/badges
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'username', 'stats', 'badges'])
+      );
+
+      function isValidUser(data) {
+        return data.uid == request.auth.uid &&
+               data.email is string &&
+               data.email.size() <= 200;
+      }
+    }
+
+    // --- TYPING ATTEMPTS ---
+    match /typingAttempts/{attemptId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isOwner(incoming().userId) && isValidAttempt(incoming());
+      
+      function isValidAttempt(data) {
+        return data.wpm is number && data.wpm >= 0 && data.wpm < 500 &&
+               data.accuracy is number && data.accuracy >= 0 && data.accuracy <= 100 &&
+               data.userId == request.auth.uid &&
+               data.createdAt == request.time;
+      }
+    }
+
+    // --- CONTESTS ---
+    match /contests/{contestId} {
+      allow read: if true; 
+      allow create: if isSignedIn() && isAdmin(); // Only admins can create arenas
+      allow update: if isSignedIn() && (
+        isAdmin() || // Admins can manage any arena
+        isOwner(existing().createdBy) // Creators can manage their own arenas
+      );
+      allow delete: if isSignedIn() && (
+        isAdmin() || 
+        isOwner(existing().createdBy)
+      );
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email in ['riat.moshiur22@gmail.com', 'rahaman242-35-606@diu.edu.bd'] &&
+        request.auth.token.email_verified == true
+      );
+    }
+  }
+}
